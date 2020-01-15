@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 
 
 def _get_aws_ip_ranges():
+    filename = 'util/ipresolver/aws-ip-ranges.json'
     try:
-        with open("util/ipresolver/aws-ip-ranges.json", "r") as f:
+        with open(filename, "r") as f:
             return json.loads(f.read())
     except IOError:
         logger.exception("Could not load AWS IP Ranges")
@@ -37,6 +38,10 @@ def _get_aws_ip_ranges():
         return None
     except TypeError:
         logger.exception("Could not load AWS IP Ranges")
+        return None
+    except FileNotFoundError:
+        msg = 'Quay will not be able to resolve IP addresses. File does not exist: %s' % filename
+        logger.exception(msg)
         return None
 
 
