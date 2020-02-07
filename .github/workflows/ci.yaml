@@ -78,6 +78,7 @@ jobs:
       - name: Unit Tests (SQLite)
         env:
           TEST: "true"
+          PYTHONPATH: .
         run: |
           alembic upgrade head
           py.test --timeout=3600 --verbose .
