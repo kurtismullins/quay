@@ -1,28 +1,23 @@
 ---
 language: python
+cache: pip
 python:
-  - 3.6
+  - "3.6"
+  - "3.7"
 
 services:
-  - docker
+  - mysql
+  - postgresql
 
-install: true
+# Required for Quay to use Postgres
+# TODO: Move to the only job which runs on Postgres
+#before_script:
+#  - sh -c "if [ '$DB' = 'postgres' ]; then psql -U postgrs -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;' fi"
 
-# Stop default database instances here to avoid port conflicts.
-before_script:
-  - sudo service mysql stop
-  - sudo service postgresql stop
-
-# Clean the cache if any step fails.
-before_cache:
-  - scripts/ci fail-clean
-
-script: echo "Running tests..."
-
-cache:
-  timeout: 1000
-  directories:
-    - $HOME/docker
+install:
+  - sudo apt-get -y install python-gpgme
+  - pip install -r requirements.txt
+  - pip install -r requirements-tests.txt
 
 stages:
   - lint
@@ -32,72 +27,97 @@ stages:
 
 jobs:
   include:
+
+    # Run Flake8 to catch specific classes of errors
     - stage: lint
-      name: Lint python
-      script: scripts/ci lint
+      name: Flake8
+      script: flake8 . --count --max-line-length=100 --select=E9,F63,F7,F82 --show-source --statistics
 
-    - stage: build
-      name: Build
-      script: scripts/ci build
+    # Run `black` to ensure proper Python code-formatting
+    - stage: lint
+      name: Python Black
+      script: black --line-length 100 --target-version py27 --check --diff .
 
-    # To further shard, change the script to shard_X_of_XS and add new steps
+    # Unit Tests (SQLite)
     - stage: test
-      name: Unit tests (shard 1)
-      script: scripts/ci unit shard_1_of_2
-    - stage: test
-      name: Unit tests (shard 2)
-      script: scripts/ci unit shard_2_of_2
+      name: Unit Tests (SQLite)
+      env:
+        - TEST=true
+        - ENCRYPTED_ROBOT_TOKEN_MIGRATION_PHASE=new-installation
+      script: 
+        alembic upgrade head
+        py.test --cov="." --cov-report=html --cov-report=term-missing --timeout=3600 --verbose -x .
 
+    # Unit Tests (MySQL)
     - stage: test
-      name: Registry tests (shard 1)
-      script: scripts/ci registry shard_1_of_5
-    - stage: test
-      name: Registry tests (shard 2)
-      script: scripts/ci registry shard_2_of_5
-    - stage: test
-      name: Registry tests (shard 3)
-      script: scripts/ci registry shard_3_of_5
-    - stage: test
-      name: Registry tests (shard 4)
-      script: scripts/ci registry shard_4_of_5
-    - stage: test
-      name: Registry tests (shard 5)
-      script: scripts/ci registry shard_5_of_5
+      name: Unit Tests (MySQL)
+      env:
+        - TEST=true
+        - TEST_DATABASE_URI=mysql://travis:root@127.0.0.1
+        - ENCRYPTED_ROBOT_TOKEN_MIGRATION_PHASE=new-installation
+      script: 
+        alembic upgrade head
+        py.test --cov="." --cov-report=html --cov-report=term-missing --timeout=3600 --verbose -x .
 
+    # Unit Tests (Postgres)
     - stage: test
-      name: Legacy registry tests
-      script: scripts/ci registry_old
+      name: Unit Tests (Postgres)
+      env:
+        - TEST=true
+        - TEST_DATABASE_URI=postgresql://travis:root@127.0.0.1
+        - ENCRYPTED_ROBOT_TOKEN_MIGRATION_PHASE=new-installation
+      script:
+        alembic upgrade head
+        py.test --cov="." --cov-report=html --cov-report=term-missing --timeout=3600 --verbose -x .
 
+    # Registry Tests
     - stage: test
-      name: Custom TLS certs test
-      script: scripts/ci certs_test
+      name: Registry Tests
+      env:
+        - TEST=true
+        - ENCRYPTED_ROBOT_TOKEN_MIGRATION_PHASE=new-installation
+      script: py.test --cov="." --cov-report=html --cov-report=term-missing --timeout=3600 --verbose --show-count -x test/registry/registry_tests.py
 
+    # Legacy Registry Tests
     - stage: test
-      name: Gunicorn worker test
-      script: scripts/ci gunicorn_test
+      name: Legacy Registry Tests
+      env:
+        - TEST=true
+        - ENCRYPTED_ROBOT_TOKEN_MIGRATION_PHASE=new-installation
+      script: py.test --cov="." --cov-report=html --cov-report=term-missing --timeout=3600 --verbose --show-count -x test/registry_tests.py
 
-    - stage: test
-      name: MySQL unit tests (shard 1)
-      script: scripts/ci mysql shard_1_of_2
-    - stage: test
-      name: MySQL unit tests (shard 2)
-      script: scripts/ci mysql shard_2_of_2
+#    - stage: test
+#      name: Custom TLS certs test
+#      # TODO: Better name to describe what is being verified?
+#      script: test/test_certs_install.sh
 
-    - stage: test
-      name: Postgres unit tests (shard 1)
-      script: scripts/ci postgres shard_1_of_2
-    - stage: test
-      name: Postgres unit tests (shard 2)
-      script: scripts/ci postgres shard_2_of_2
+#    - stage: test
+#      name: Gunicorn worker test
+#      python: '2.7'
+#      script: scripts/ci gunicorn_test
 
-    - stage: clean
-      name: Cleanup
-      script: scripts/ci clean
+#    - stage: test
+#      name: MySQL unit tests (shard 1)
+#      python: '2.7'
+#      script: scripts/ci mysql shard_1_of_2
+#    - stage: test
+#      name: MySQL unit tests (shard 2)
+#      python: '2.7'
+#      script: scripts/ci mysql shard_2_of_2
 
-notifications:
-  slack:
-    rooms:
-      - secure: "fBR3YMXaOkoX2Iz7oSJVAw9zrcDoqwadiMEWTWhx7Ic0zoM8IieD2EWIcDHAoGpqf3ixHkc1v/iLBpbWHgvK7TkrSrGEbFyEmu/uomuHU8oGTiazWCbMWg9T2mhWYFyVaKtt8bzMbFo8k72kYK/NWV8bR4W/Qe/opkH2GGzfhZA="
-    on_success: change
-    on_failure: always
-    on_pull_requests: false
+#    - stage: test
+#      name: Postgres unit tests (shard 1)
+#      python: '2.7'
+#      script: scripts/ci postgres shard_1_of_2
+#    - stage: test
+#      name: Postgres unit tests (shard 2)
+#      python: '2.7'
+#      script: scripts/ci postgres shard_2_of_2
+
+#notifications:
+#  slack:
+#    rooms:
+#      - secure: "fBR3YMXaOkoX2Iz7oSJVAw9zrcDoqwadiMEWTWhx7Ic0zoM8IieD2EWIcDHAoGpqf3ixHkc1v/iLBpbWHgvK7TkrSrGEbFyEmu/uomuHU8oGTiazWCbMWg9T2mhWYFyVaKtt8bzMbFo8k72kYK/NWV8bR4W/Qe/opkH2GGzfhZA="
+#    on_success: change
+#    on_failure: always
+#    on_pull_requests: false
