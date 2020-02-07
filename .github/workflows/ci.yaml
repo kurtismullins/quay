@@ -6,7 +6,7 @@ on: pull_request
 jobs:
 
   lint:
-
+    name: Python Linting
     runs-on: ubuntu-latest
 
     strategy:
@@ -28,4 +28,9 @@ jobs:
       - name: Verify Python files using Flake8
         run: flake8 --max-line-length=100 .
 
+  build:      
+    name: Verify Dockerfiles
 
+    steps:
+      - name: Build Dockerfile
+        run: docker build .
