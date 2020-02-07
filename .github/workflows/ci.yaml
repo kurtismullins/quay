@@ -30,6 +30,7 @@ jobs:
 
   build:      
     name: Verify Dockerfiles
+    runs-on: ubuntu-latest
 
     steps:
       - name: Build Dockerfile
