@@ -15,7 +15,7 @@ services:
 #  - sh -c "if [ '$DB' = 'postgres' ]; then psql -U postgrs -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;' fi"
 
 install:
-  - sudo apt-get -y install python3-gpgme libgpgme-dev
+  - sudo apt-get -y install python3-gpgme libgpgme11-dev
   - pip install -r requirements.txt
   - pip install -r requirements-tests.txt
 
