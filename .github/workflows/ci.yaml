@@ -31,7 +31,9 @@ jobs:
   build:      
     name: Verify Dockerfiles
     runs-on: ubuntu-latest
+    need: lint
 
     steps:
+      - uses: actions/checkout@v2
       - name: Build Dockerfile
         run: docker build .
