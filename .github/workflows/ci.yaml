@@ -1,7 +1,7 @@
 name: Continuous Integration
 
 # Only run CI on Pull Requests
-on: pull-request
+on: pull_request
 
 jobs:
 
