@@ -1,7 +1,8 @@
+from abc import ABCMeta, abstractmethod, abstractproperty
+
 import logging
 import yaml
 
-from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
 from jsonschema import validate, ValidationError
@@ -41,6 +42,7 @@ def import_yaml(config_obj, config_file):
             if key.isupper():
                 config_obj[key] = c[key]
 
+    # TODO: Verify whether this is still required.
     if config_obj.get("SETUP_COMPLETE", True):
         try:
             validate(config_obj, CONFIG_SCHEMA)
@@ -63,6 +65,27 @@ def export_yaml(config_obj, config_file):
             f.write(get_yaml(config_obj))
     except IOError as ioe:
         raise CannotWriteConfigException(str(ioe))
+
+
+class BaseConfigProvider:
+    """
+    BaseConfigProvider defines a standard interface for reading and writing configuration files.
+    """
+    __metaclass__ = ABCMeta  # BaseConfigProvider is an AbstractBaseClass
+
+    @abstractmethod
+    def get_config(self, filename_glob="config*.yaml"):
+        """
+        Returns an object representation of the parsed configuration file(s).
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def write_config(self, configuration, filename="config.yaml"):
+        """
+        Overwrites a configuration file with the given `config`. Defaults to `config.yaml`.
+        """
+        raise NotImplementedError
 
 
 @add_metaclass(ABCMeta)
