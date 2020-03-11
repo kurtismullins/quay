@@ -8,10 +8,27 @@ import logging
 from yaml import safe_load, safe_dump
 
 from config.base import BaseConfig
-from config.exceptions import NoConfigFilesFound
+from config.defaults import settings as default_settings
+from config.exceptions import NoConfigFilesFound, InvalidConfigFilePath
 
 
 logger = logging.getLogger(__name__)
+
+
+def _read_yaml_from_file(path=None):
+    """
+    Reads and validates a given file. If valid, returns a Python
+    representation of the file's contents.
+    """
+    if not path:
+        msg = 'Cannot read configuration file with invalid path: %s' % path
+        raise InvalidConfigFilePath(msg)
+
+    with open(path, 'r') as f:
+        data = safe_load(f)
+        logger.info('Successfully read configuration from: %s', path)
+
+    return data
 
 
 class FileConfig(BaseConfig):
@@ -27,7 +44,17 @@ class FileConfig(BaseConfig):
         location: The location, on disk, which will be overwritten with the
                   current configuration.
         """
-        raise NotImplementedError
+        if not path:
+            if self._write_path:
+                path = self._write_path  # fall-back to path set on __init__()
+            else:
+                msg = "Cannot write configuration. Invalid path: %s" % path
+                raise InvalidConfigFilePath(msg)
+
+        with open(path, 'w') as f:
+            safe_dump(self._config, f)
+
+        logger.info("Configuration saved to: %s", path)
 
     def load(self, path=None):
         """
@@ -38,6 +65,9 @@ class FileConfig(BaseConfig):
         # Container for configuration read from file(s)
         new_config = {}
 
+        # Apply defaults to the new configuration
+        new_config.update(default_settings)
+
         paths = self._list_files(path)
         if not paths:
             raise NoConfigFilesFound
@@ -45,11 +75,11 @@ class FileConfig(BaseConfig):
         logger.debug('The following configuration files were found: %s', paths)
 
         for p in paths:
-            data = self._read_yaml_from_file(p)
-            # TODO: Validate data
+            data = _read_yaml_from_file(p)
+            # TODO: Validate data before using it
             new_config.update(data)
 
-        print(json.dumps(new_config, indent=2, sort_keys=True))
+        self._config = new_config
 
     def _list_files(self, path=None):
         """
@@ -59,7 +89,8 @@ class FileConfig(BaseConfig):
             if self._read_path:
                 path = self._read_path  # fall-back to path set on __init__()
             else:
-                logger.warning('Invalid configuration file path: %s', path)
+                msg = 'Cannot list configuration files. Invalid path: %s' % path
+                logger.warning(msg, path)
                 return []
 
         paths = glob.glob(path)
@@ -70,18 +101,3 @@ class FileConfig(BaseConfig):
 
         sorted_paths = sorted(paths)  # Ensure a consistent, deterministic order
         return sorted_paths
-
-    def _read_yaml_from_file(self, path=None):
-        """
-        Reads and validates a given file. If valid, returns a Python
-        representation of the file's contents.
-        """
-        if not path:
-            msg = 'Attempted to read YAML File with invalid path: %s' % path
-            raise Exception(msg)  # TODO: Use specific exception type
-
-        with open(path, 'r') as f:
-            data = safe_load(f)
-            logger.info('Read configuration from: %s', path)
-
-        return data

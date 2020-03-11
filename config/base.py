@@ -3,6 +3,9 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 
+from json import dumps
+from yaml import safe_dump
+
 try:
     from collections.abc import MutableMapping  # Python 3
 except ImportError:
@@ -78,13 +81,13 @@ class BaseConfig(MutableMapping):
         """
         Converts the contents of the current configuration to a YAML string.
         """
-        raise NotImplementedError("TODO: Implement me")
+        return safe_dump(self._config)
 
-    def to_json(self):
+    def to_json(self, sort_keys=True, indent=2):
         """
         Returns a JSON representation of the configuration.
         """
-        raise NotImplementedError("TODO: Implement me")
+        return dumps(self, sort_keys=sort_keys, indent=indent)
 
     def __delitem__(self, key):
         del self._config[key]
