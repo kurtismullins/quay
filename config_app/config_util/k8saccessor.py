@@ -123,6 +123,13 @@ class KubernetesAccessorSingleton(object):
         """
         secret = self._lookup_secret()
 
+        if not secret:
+            msg = "Quay's configuration secret `{}` in namespace `{}` was not found.".format(
+                self.kube_config.qe_config_secret,
+                self.kube_config.qe_namespace,
+            )
+            raise K8sApiException(msg)
+
         secret_data = secret.get("data", {})
 
         # Make the `extra_ca_certs` dir to ensure we can populate extra certs
