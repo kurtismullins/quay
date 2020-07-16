@@ -167,6 +167,9 @@ def _request_start():
         extra={"request_id": request.request_id},
     )
 
+    logger.debug("Ensuring connection to database.")
+    database.db.connect()
+
 
 DEFAULT_FILTER = lambda x: "[FILTERED]"
 FILTERED_VALUES = [
@@ -205,6 +208,10 @@ def _request_end(resp):
 
     if request.user_agent is not None:
         extra["user-agent"] = request.user_agent.string
+
+    if not database.db.is_closed():
+        logger.debug("Closing database")
+        database.db.close()
 
     logger.debug("Ending request: %s (%s)", request.request_id, request.path, extra=extra)
     return resp

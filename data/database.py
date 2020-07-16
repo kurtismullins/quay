@@ -415,6 +415,10 @@ def configure(config_object, testing=False):
     logger.debug("Configuring database")
     db_kwargs = dict(config_object["DB_CONNECTION_ARGS"])
     write_db_uri = config_object["DB_URI"]
+
+    # Do not use autoconnect
+    db_kwargs["autoconnect"] = False
+
     db.initialize(_db_from_url(write_db_uri, db_kwargs))
 
     parsed_write_uri = make_url(write_db_uri)
