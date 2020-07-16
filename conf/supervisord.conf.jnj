@@ -187,7 +187,7 @@ stderr_events_enabled = true
 [program:gunicorn-secscan]
 environment=
   PYTHONPATH=%(ENV_QUAYDIR)s
-command=gunicorn -c --max-requests 4000 %(ENV_QUAYCONF)s/gunicorn_secscan.py secscan:application
+command=gunicorn --max-requests 4000 -c %(ENV_QUAYCONF)s/gunicorn_secscan.py secscan:application
 autostart = {{ config['gunicorn-secscan']['autostart'] }}
 stdout_events_enabled = true
 stderr_events_enabled = true
@@ -203,7 +203,7 @@ stderr_events_enabled = true
 [program:gunicorn-web]
 environment=
   PYTHONPATH=%(ENV_QUAYDIR)s
-command=gunicorn -c --max-requests 4000 %(ENV_QUAYCONF)s/gunicorn_web.py web:application
+command=gunicorn --max-requests 4000 -c %(ENV_QUAYCONF)s/gunicorn_web.py web:application
 autostart = {{ config['gunicorn-web']['autostart'] }}
 stdout_events_enabled = true
 stderr_events_enabled = true
