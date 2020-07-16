@@ -417,7 +417,7 @@ def configure(config_object, testing=False):
     write_db_uri = config_object["DB_URI"]
 
     # Do not use autoconnect
-    db_kwargs["autoconnect"] = False
+    #db_kwargs["autoconnect"] = False
 
     db.initialize(_db_from_url(write_db_uri, db_kwargs))
 

@@ -167,8 +167,8 @@ def _request_start():
         extra={"request_id": request.request_id},
     )
 
-    logger.debug("Ensuring connection to database.")
-    database.db.connect()
+    #logger.debug("Ensuring connection to database.")
+    #database.db.connect()  # Not all requests may require a DB connection
 
 
 DEFAULT_FILTER = lambda x: "[FILTERED]"
