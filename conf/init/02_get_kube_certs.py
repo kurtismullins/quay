@@ -30,7 +30,7 @@ def _lookup_secret(service_token):
     secret_url = "namespaces/%s/secrets/%s" % (QE_NAMESPACE, QE_CONFIG_SECRET)
     response = _execute_k8s_api(service_token, "GET", secret_url)
     if response.status_code != 200:
-        raise Exception("Cannot get the config secret")
+        raise Exception("Unable to get secret %s in namespace %s. Response: %s" % (QE_CONFIG_SECRET, QE_NAMESPACE, response))
     return json.loads(response.text)
 
 
