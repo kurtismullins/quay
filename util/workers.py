@@ -28,6 +28,10 @@ def get_worker_count(worker_kind_name, multiplier, minimum=None, maximum=None):
 
     # Check for an override via an environment variable.
     override_value = os.environ.get("WORKER_COUNT_" + worker_kind_name.upper())
+
+    if override_value:
+        override_value = int(override_value)
+
     if override_value is not None:
         return max(override_value, minimum)
 
