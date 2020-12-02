@@ -6,6 +6,7 @@ import os
 from functools import partial
 
 from Crypto.PublicKey import RSA
+from elasticapm.contrib.flask import ElasticAPM
 from flask import Flask, request, Request
 from flask_login import LoginManager
 from flask_mail import Mail
@@ -80,6 +81,12 @@ INIT_SCRIPTS_LOCATION = "/conf/init/"
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
+# Elasticsearch APM
+if "APM_SECRET" in os.environ and "APM_HOST" in os.environ:
+    apm = ElasticAPM(app, service_name="quay",
+                     secret_token=os.environ.get("APM_SECRET"),
+                     server_url=os.environ.get("APM_HOST"))
+
 # Instantiate the configuration.
 is_testing = IS_TESTING
 is_kubernetes = IS_KUBERNETES
@@ -136,6 +143,7 @@ if features.HELM_OCI_SUPPORT:
     register_artifact_type(HELM_CHART_CONFIG_TYPE, HELM_CHART_LAYER_TYPES)
 
 CONFIG_DIGEST = hashlib.sha256(json.dumps(app.config, default=str).encode("utf-8")).hexdigest()[0:8]
+
 
 logger.debug("Loaded config", extra={"config": app.config})
 
