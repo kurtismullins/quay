@@ -1,6 +1,6 @@
 
 ###################
-FROM centos:8 as config-editor
+FROM quay.io/app-sre/centos:centos8 as config-editor
 
 WORKDIR /config-editor
 
@@ -28,7 +28,7 @@ RUN go install ./cmd/config-tool
 
 
 ###################
-FROM centos:8
+FROM quay.io/app-sre/centos:centos8
 LABEL maintainer "thomasmckay@redhat.com"
 
 ENV OS=linux \
